@@ -1,0 +1,38 @@
+{
+  "name": "gta",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c ./scripts/rollup.config.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@ragempcommunity/types-cef": "^2.1.6",
+    "@ragempcommunity/types-client": "^2.1.6",
+    "@ragempcommunity/types-server": "^2.1.6",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-replace": "^5.0.5",
+    "@swc/core": "^1.5.5",
+    "@swc/helpers": "^0.5.11",
+    "@types/node": "^20.12.11",
+    "builtin-modules": "^4.0.0",
+    "dotenv": "^16.4.5",
+    "fs-jetpack": "^5.1.0",
+    "husky": "^9.0.11",
+    "rollup-plugin-swc3": "^0.11.2",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-tsconfig-paths": "^1.5.2",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "colorette": "^2.0.20",
+    "uuid-v4": "^0.1.0",
+    "uuidv4": "^6.2.13"
+  }
+}
