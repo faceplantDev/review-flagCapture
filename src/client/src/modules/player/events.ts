@@ -4,7 +4,8 @@ export class PlayerEvents {
     private events: Record<string, (...args: any[]) => void> = {
         "C:Player:Ragdoll": PlayerTools.ragDoll,
         "C:Player:Freeze": PlayerTools.setFreeze,
-        "C:Player:Blackscreen": PlayerTools.setBlackScreen
+        "C:Player:Blackscreen": PlayerTools.setBlackScreen,
+        "incomingDamage": PlayerTools.incomingDamage
     }
 
     constructor() {

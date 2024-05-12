@@ -3,6 +3,7 @@ import { Tools } from "../../tools";
 import { Flag } from "../classes/flag";
 import { FlagCaptureHandlers } from "../classes/handlers";
 import { IFlagCaptureTeams } from "@shared/types";
+import { ColshapeMpExtended } from "@/@types";
 
 export class FlagsController {
     private _flags: Flag[] = []
@@ -13,13 +14,13 @@ export class FlagsController {
 
         mp.events.add('playerEnterColshape', this.playerEnterColshape.bind(this))
         mp.events.add('playerExitColshape', this.playerLeaveColshape.bind(this))
-        mp.events.add('playerDeath', this.playerDeath.bind(this))
     }
 
     public teamTakesFlag(team: IFlagCaptureTeams, flag: Flag) {
         if(!FlagCaptureHandlers.lobby) throw new Error('Lobby is not created');
         
         if(this._flags.every(f => f.team == team)) {
+            console.log(`Team ${team} already took all flags`);
             FlagCaptureHandlers.lobby!.teamWin(team)
         }
     }
@@ -42,47 +43,36 @@ export class FlagsController {
         return isPlayerOnFlag
     }
 
-    private playerEnterColshape(player: PlayerMp, shape: ColshapeMp) {
+    private playerEnterColshape(player: PlayerMp, shape: ColshapeMpExtended) {
         if(!FlagCaptureHandlers.lobby) return
         if(!FlagCaptureHandlers.lobby!.isLobbyStarted()) return
         if(FlagCaptureHandlers.lobby!.timerController.getPhase() == 0) return
 
-        const flag = shape.data as Flag
+        const flag = shape.flagInfo as Flag
         if(!flag) return
+        if(!this._flags.includes(flag)) return
 
         flag.playerEnter(player)
+        console.log(`Player ${player.name} entered colshape`)
     }
 
-    private playerLeaveColshape(player: PlayerMp, shape: ColshapeMp) {
+    private playerLeaveColshape(player: PlayerMp, shape: ColshapeMpExtended) {
         if(!FlagCaptureHandlers.lobby) return
         if(!FlagCaptureHandlers.lobby!.isLobbyStarted()) return
         if(FlagCaptureHandlers.lobby!.timerController.getPhase() == 0) return
 
-        const flag = shape.data as Flag
+        const flag = shape.flagInfo as Flag
         if(!flag) return
-
+        if(!this._flags.includes(flag)) return
+        
         flag.playerLeaveOrDead(player)
-    }
-
-    private playerDeath(player: PlayerMp) {
-        if(!FlagCaptureHandlers.lobby) return
-        if(!FlagCaptureHandlers.lobby!.isLobbyStarted()) return
-        if(FlagCaptureHandlers.lobby!.timerController.getPhase() == 0) return
-
-        const flag = this.isPlayerOnFlag(player)
-        if(!flag) return
-
-        const playerTeam = FlagCaptureHandlers.lobby.teamsController.getPlayerTeam(player)
-        if(!playerTeam) return
-
-        flag.playerLeaveOrDead(player)
-        player.spawn(Tools.xyzToMpVector3(Tools.getRandomElementOfArray(FlagCaptureHandlers.lobby!.map.spawns[playerTeam])))
-        player.giveWeapon(FlagCaptureHandlers.lobby!.weapon, 9999)
+        console.log(`Player ${player.name} left colshape`)
     }
 
     public destroy() {
         mp.events.remove('playerEnterColshape', this.playerEnterColshape.bind(this))
         mp.events.remove('playerExitColshape', this.playerLeaveColshape.bind(this))
-        mp.events.remove('playerDeath', this.playerDeath.bind(this))
+
+        this._flags.forEach(flag => flag.destroy())
     }
 }

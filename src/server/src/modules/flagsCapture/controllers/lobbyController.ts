@@ -22,6 +22,9 @@ export class LobbyController {
         this.teamsController = new TeamController();
         this.timerController = new TimerController();
         this.flagsController = new FlagsController(this.map.flags.map(flag => Tools.xyzToMpVector3(flag)));
+
+        mp.world.time.set(this.map.time.h, this.map.time.m, this.map.time.s);
+        mp.world.weather = this.map.weather;
     }
 
     public startGame() {
@@ -51,26 +54,51 @@ export class LobbyController {
         const players = this.teamsController.getPlayers();
         players.forEach(p => p.call('C:Player:Freeze', [true]))
         players.forEach(LobbyController.teleportToRandomSpawn)
+
+        this.teamsController.updateHud({
+            message: `Ожидание начала`,
+            team: 'all'
+        })
+
+        console.log('Lobby started')
     }
 
     public startCapture() {
         const players = this.teamsController.getPlayers();
         players.forEach(p => p.giveWeapon(this.weapon, 9999))
         players.forEach(p => p.call('C:Player:Freeze', [false]))
+        players.forEach(p => p.health = 100)
+
+        console.log('Capture started')
     }
 
-    public teamWin(team: IFlagCaptureTeams) {
+    public async teamWin(team: IFlagCaptureTeams) {
         this.teamsController.updateHud({
             message: `Команда ${team} победила!`,
-            team: undefined
+            team: 'all'
         })
+        await Tools.sleep(3000)
         this.endLobby()
+
+        console.log(team + 'Team win')
     }
 
-    public endLobby() {
+    public async endLobby() {
         const players = this.teamsController.getPlayers();
-        players.forEach(p => p.call('C:Player:Freeze', [true]))
+        players.forEach(p => p.call('C:Player:Freeze', [false]))
+        players.forEach(p => p.call('C:Flags:ShowHud', [false]))
+        players.forEach(p => p.removeAllWeapons())
         players.forEach(p => PlayerTools.teleport(p, Tools.xyzToMpVector3(SHARED_CONSTANTS.LOBBY_POSITION)))
+
+        console.log('Lobby ended')
+
+        if (FlagCaptureHandlers.lobby != null) {
+            FlagCaptureHandlers.lobby.destroy();
+            FlagCaptureHandlers.lobby = null;
+          }
+
+        await Tools.sleep(10000)
+        FlagCaptureHandlers.startLobby()
     }
 
     public isLobbyStarted() {
@@ -92,11 +120,16 @@ export class LobbyController {
         const position = Tools.xyzToMpVector3(Tools.getRandomElementOfArray(lobby.map.spawns[playerTeam]));
         PlayerTools.teleport(player, position);
 
+        player.call('C:Flags:ShowHud', [true])
+
+        console.log(`Player ${player.name} spawned`)
         return true
     }
 
     public destroy() {
         this.flagsController.destroy();
         this.timerController.destroy();
+
+        console.log('Lobby destroyed')
     }
 }

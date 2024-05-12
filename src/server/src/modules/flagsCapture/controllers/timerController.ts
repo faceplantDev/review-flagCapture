@@ -11,6 +11,8 @@ export class TimerController {
         this.timer = SHARED_CONSTANTS.TIMER.lobbyStart
         this.phase = 0
         this.interval = setInterval(this.everyTick.bind(this), 1000)
+
+        console.log('TimerController created')
     }
 
     public getTimer() {

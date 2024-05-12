@@ -2,6 +2,7 @@ import { SHARED_CONSTANTS } from "@shared/constants";
 import { FlagCaptureHandlers } from "../classes/handlers";
 import { IFlagCaptureTeams } from "@shared/types";
 import { LobbyController } from "./lobbyController";
+import { Tools } from "../../tools";
 
 export class TeamController {
     private teams: Record<IFlagCaptureTeams, PlayerMp[]> = {
@@ -9,17 +10,22 @@ export class TeamController {
         'blue': []
     }
     constructor() {
-        mp.events.add("S:Zones:PlayerLog", this.playerExitZone.bind(this));
+        mp.events.add('playerLeavePolygon', this.playerExitZone.bind(this));
+        mp.events.add("playerDeath", this.playerDeath.bind(this));
+       
     }
 
-    private playerExitZone(player: PlayerMp, exitOrEnter: boolean) {
-        if(exitOrEnter) return
+    private playerExitZone(player: PlayerMp) {
+        if(!FlagCaptureHandlers.lobby) return
+        if(FlagCaptureHandlers.lobby.teamsController.getPlayerTeam(player) == undefined) return
 
         player.call('C:Player:Ragdoll');
 
         setTimeout(() => {
             LobbyController.teleportToRandomSpawn(player);
         }, 2000)
+
+        console.log(`Player ${player.name} exitZone`)
     }
 
     public isReadyToStart() {
@@ -39,6 +45,8 @@ export class TeamController {
         }
 
         this.updateHud();
+
+        console.log(`Player ${player.name} joined team ${team}`);
     }
 
     public setPlayerGodMode(player: PlayerMp) {
@@ -48,6 +56,8 @@ export class TeamController {
             player.setVariable('godmode', false);
             player.alpha = 255;
         }, SHARED_CONSTANTS.GODMODE_TIMEOUT);
+
+        console.log(`Player ${player.name} set godmode`);
     }
 
     public removePlayerFromTeam(team: IFlagCaptureTeams, player: PlayerMp) {
@@ -55,6 +65,8 @@ export class TeamController {
         this.teams[team].splice(this.teams[team].indexOf(player), 1);
 
         this.updateHud();
+
+        console.log(`Player ${player.name} left team ${team}`);
     }
 
     public getPlayersInTeam(team: IFlagCaptureTeams) {
@@ -77,9 +89,11 @@ export class TeamController {
         }
 
         this.updateHud();
+
+        console.log(`Player ${player.name} removed from team`);
     }
 
-    public updateHud(message?: {message: string, team: IFlagCaptureTeams | undefined}) {
+    public updateHud(message?: {message: string, team: IFlagCaptureTeams | undefined | 'all'}) {
         if(!FlagCaptureHandlers.lobby) throw new Error('Lobby is not created');
         const blueTeamSize = this.teams['blue'].length;
         const redTeamSize = this.teams['red'].length;
@@ -87,6 +101,7 @@ export class TeamController {
         const timer = FlagCaptureHandlers.lobby!.timerController
 
         const data = {
+            mapName: FlagCaptureHandlers.lobby!.map.name,
             timer: timer.getTimer(),
             phase: timer.getPhase(),
             flags: {
@@ -104,7 +119,7 @@ export class TeamController {
             if(!mp.players.exists(p)) return
             const dataWithMessage = {
                 ...data,
-                message: message != undefined ? message.team == this.getPlayerTeam(p) ? message.message : message.team == undefined ? message.message : undefined : undefined,
+                message: message != undefined ? message.team == this.getPlayerTeam(p) ? message.message : message.team == 'all' ? message.message : undefined : undefined,
             }
             const flag = FlagCaptureHandlers.lobby!.flagsController.isPlayerOnFlag(p)
             if(flag) {
@@ -116,6 +131,31 @@ export class TeamController {
                 p.call('C:Flags:UpdateHud', [JSON.stringify(dataWithFlag)])
             } else p.call('C:Flags:UpdateHud', [JSON.stringify(dataWithMessage )])
         })
+
+
+    }
+
+    public async playerDeath(player: PlayerMp) {
+        if(!FlagCaptureHandlers.lobby) return
+        if(!FlagCaptureHandlers.lobby!.isLobbyStarted()) return
+        if(FlagCaptureHandlers.lobby!.timerController.getPhase() == 0) return
+
+        const playerTeam = FlagCaptureHandlers.lobby.teamsController.getPlayerTeam(player)
+        if(!playerTeam) return
+        
+        const flag = FlagCaptureHandlers.lobby!.flagsController.isPlayerOnFlag(player)
+        if(flag) {
+            flag.playerLeaveOrDead(player)
+        }
+
+        player.call('C:Player:Blackscreen', [true])
+        await Tools.sleep(500)
+        player.spawn(Tools.xyzToMpVector3(Tools.getRandomElementOfArray(FlagCaptureHandlers.lobby!.map.spawns[playerTeam])))
+        player.giveWeapon(FlagCaptureHandlers.lobby!.weapon, 9999)
+        FlagCaptureHandlers.lobby!.teamsController.setPlayerGodMode(player)
+        player.call('C:Player:Blackscreen', [false])
+
+        console.log(`Player ${player.name} died in zone`)
     }
 
     public static getColor(team: IFlagCaptureTeams | undefined) {   
@@ -128,5 +168,10 @@ export class TeamController {
 
     public static getEnemyTeam(team: IFlagCaptureTeams) {
         return team == 'red' ? 'blue' : 'red';
+    }
+
+    public destroy() {
+        mp.events.remove('playerLeavePolygon', this.playerExitZone.bind(this));
+        mp.events.remove("playerDeath", this.playerDeath.bind(this));
     }
 }

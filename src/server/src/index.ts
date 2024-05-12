@@ -1,2 +1,2 @@
+import './setup'
 import './modules/flagsCapture'
-import './modules/zones/events'

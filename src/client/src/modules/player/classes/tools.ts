@@ -10,7 +10,7 @@ export class PlayerTools {
     }
 
     public static ragDoll() {
-        mp.players.local.setRagdollForceFall()
+        mp.players.local.setToRagdoll(2000, 2000, 1, true, true, true);
     }
 
     public static setFreeze(val: boolean) {
@@ -31,7 +31,7 @@ export class PlayerTools {
             customDamage /= 10;
         }
 
-        targetEntity.applyDamageTo(customDamage, true);
+        targetEntity.applyDamageTo(parseInt(`${customDamage}`), true);
 
         const currentHealth = targetEntity.getHealth();
 

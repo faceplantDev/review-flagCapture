@@ -31,8 +31,6 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "colorette": "^2.0.20",
-    "uuid-v4": "^0.1.0",
-    "uuidv4": "^6.2.13"
+    "colorette": "^2.0.20"
   }
 }

@@ -2,7 +2,7 @@ import { FlagCaptureHandlers } from "./handlers";
 
 export class FlagCaptureEvents {
     private events: Partial<Record<keyof IServerEvents, ThisifyServerEvents[keyof IServerEvents]>> = {
-        "playerReady": FlagCaptureHandlers.playerReady
+        "playerReady": FlagCaptureHandlers.playerReady,
     }
 
     constructor() {
